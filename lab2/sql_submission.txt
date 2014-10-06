@@ -1,67 +1,478 @@
 SQL Assignment Submission
 
-=== 1
-<INSERT YOUR QUERY HERE>
+1) ===================================================================================
+with HURDLES as 
+	(select event_id 
+	 FROM EVENTS 
+	 WHERE name = '110m Hurdles Men' and 
+	 EVENTS.olympic_id = 
+	 	(SELECT olympic_id 
+	 	 FROM OLYMPICS
+	 	 WHERE year = 2000))
+SELECT RESULTS.medal, PLAYERS.name, RESULTS.result
+FROM RESULTS
+INNER JOIN PLAYERS on PLAYERS.player_id = RESULTS.player_id
+WHERE RESULTS.event_id in (select * from HURDLES);
+
 **************** RESULT ***************************************************************
-<INSERT YOUR RESULT HERE>
+  medal  |                   name                   | result 
+---------+------------------------------------------+--------
+ GOLD    | Anier Garcia                             |     13
+ SILVER  | Terrence Trammell                        |  13.16
+ BRONZE  | Mark Crear                               |  13.22
+(3 rows)
+=======================================================================================
+
+
+2) ===================================================================================
+SELECT COUNT(PLAYERS.name) 
+FROM PLAYERS  
+WHERE lower(substr(players.name, 1, 1)) in ('a','e','i','o','u');
+
+Also, equivalently:
+
+SELECT COUNT(PLAYERS.name) 
+FROM PLAYERS  
+WHERE substr(players.name, 1, 1) in ('a','e','i','o','u') 
+	OR substr(players.name, 1, 1) in ('A','E','I','O','U');
+
+**************** RESULT ***************************************************************
+ count 
+-------
+    84
+(1 row)
+======================================================================================
+
+3) ===================================================================================
+SELECT DISTINCT name
+FROM EVENTS 
+WHERE result_noted_in = 'points' 
+AND 
+EVENTS.olympic_id = 
+	(SELECT olympic_id 
+	 FROM OLYMPICS
+	 WHERE year = 2000);
+
+**************** RESULT ***************************************************************
+                   name                   
+------------------------------------------
+ Heptathlon Women                        
+ Decathlon Men                           
+(2 rows)
+=======================================================================================
+
+4) ==============================================================+=====================
+CREATE TABLE CountryResults AS (
+	SELECT DISTINCT COUNTRIES.name, COUNTRIES.population, RESULTS.event_id, RESULTS.medal
+	FROM RESULTS
+	INNER JOIN COUNTRIES 
+		ON COUNTRIES.country_id = PLAYERS.country_id 
+	INNER JOIN PLAYERS 
+		ON PLAYERS.player_id = RESULTS.player_id
+	WHERE RESULTS.event_id in (
+		SELECT EVENTS.event_id 
+		FROM EVENTS
+		WHERE EVENTS.olympic_id in (
+			SELECT OLYMPICS.olympic_id 
+			FROM OLYMPICS
+			WHERE year = 2000
+		)
+	)
+);
+
+SELECT name, (cast(COUNT(event_id) as float)/cast(population as float)) AS WinCountPopulationRatio
+FROM CountryResults
+GROUP BY name, population
+ORDER BY WinCountPopulationRatio
+LIMIT 5;
+
+## COMMENTS - select distinct name, count(medal), medal from countryresults where countryresults.name = name group by countryresults.name, countryresults.medal order by count(medal) DESC limit 10;
+
+**************** RESULT ***************************************************************
+                   name                   | wincountpopulationratio 
+------------------------------------------+-------------------------
+ China                                    |      7.556728359797e-10
+ Brazil                                   |    1.07293316860233e-08
+ Nigeria                                  |    1.52056911860971e-08
+ France                                   |     1.6530144205672e-08
+ Mexico                                   |    1.86864543760873e-08
+(5 rows)
+
+=======================================================================================
+
+5) ===============================================================+====================
+SELECT COUNTRIES.name as country_name, country_group.player_count
+FROM (	
+	SELECT PLAYERS.country_id, 
+	COUNT(PLAYERS.player_id) AS player_count
+	FROM PLAYERS
+	GROUP BY PLAYERS.country_id
+) AS country_group
+INNER JOIN COUNTRIES 
+ON COUNTRIES.country_id = country_group.country_id;
+
+**************** RESULT ***************************************************************
+               country_name               | player_count 
+------------------------------------------+--------------
+ Algeria                                  |            4
+ Argentina                                |            1
+ Australia                                |           34
+ Austria                                  |            2
+ The Bahamas                              |            5
+ Barbados                                 |            1
+ Belarus                                  |            7
+ Brazil                                   |            9
+ Bulgaria                                 |            1
+ Canada                                   |            1
+ China                                    |            8
+ Cameroon                                 |            1
+ Costa Rica                               |            1
+ Croatia                                  |            1
+ Cuba                                     |           12
+ Czech Republic                           |            3
+ Denmark                                  |            2
+ Dominican Republic                       |            1
+ Eritrea                                  |            1
+ Spain                                    |            4
+ Estonia                                  |            2
+ Ethiopia                                 |           12
+ Finland                                  |            1
+ France                                   |           10
+ United Kingdom                           |           12
+ Germany                                  |           22
+ Greece                                   |            7
+ Hungary                                  |            4
+ Ireland                                  |            1
+ Iceland                                  |            1
+ Italy                                    |           12
+ Jamaica                                  |           18
+ Japan                                    |           16
+ Kazakhstan                               |            2
+ Kenya                                    |           13
+ Saudi Arabia                             |            1
+ Latvia                                   |            2
+ Lithuania                                |            2
+ Morocco                                  |            5
+ Mexico                                   |            3
+ Mozambique                               |            1
+ Netherlands                              |           13
+ Nigeria                                  |           12
+ Norway                                   |            3
+ Poland                                   |            5
+ Portugal                                 |            3
+ Romania                                  |           10
+ South Africa                             |           10
+ Russia                                   |           38
+ Slovenia                                 |            1
+ Sri Lanka                                |            1
+ Slovakia                                 |            1
+ Sweden                                   |            9
+ Trinidad and Tobago                      |            2
+ Turkey                                   |            1
+ Ukraine                                  |            9
+ United States                            |           88
+ Zimbabwe                                 |            1
+(58 rows)
 =============================================================================================
 
-=== 2
-<INSERT YOUR QUERY HERE>
+6) ==========================================================================================
+
+SELECT country_id, birthdate, name
+FROM PLAYERS 
+WHERE (SELECT SUBSTRING(name, 
+length(name), length(name))) = 'd'
+ORDER BY country_id ASC, birthdate DESC;
+
 **************** RESULT ***************************************************************
-<INSERT YOUR RESULT HERE>
+ country_id | birthdate  |                   name                   
+------------+------------+------------------------------------------
+ ALG        | 1980-10-04 | Abderrahmane Hammad                     
+ AUS        | 1973-10-26 | Mark Ormrod                             
+ CUB        | 1981-12-09 | Yunaika Crawford                        
+ GER        | 1980-09-04 | Lars Conrad                             
+ JAM        | 1978-07-21 | Beverly McDonald                        
+ JAM        | 1977-08-05 | Michael Blackwood                       
+ NED        | 1974-07-06 | Pieter van den Hoogenband               
+ NOR        | 1972-02-04 | Trine Hattestad                         
+ RSA        | 1975-08-06 | Darian Townsend                         
+ USA        | 1981-04-08 | BJ Bedford                              
+ USA        | 1980-10-22 | Amanda Beard                            
+ USA        | 1978-11-20 | Shawn Crawford                          
+ USA        | 1972-01-13 | Jon Drummond                            
+(13 rows)
+
 =============================================================================================
 
-=== 3
-<INSERT YOUR QUERY HERE>
+7) ==========================================================================================
+SELECT EXTRACT(YEAR FROM PLAYERS.birthdate) 
+			AS PlayerBirthYear, 
+	   COUNT(PLAYERS.player_id) 
+	   		AS PlayerCount, 
+	   SUM(COALESCE(GoldMedalCount, 0)) 
+	   		AS GoldCount
+FROM PLAYERS 
+LEFT OUTER JOIN 
+(SELECT player_id, 
+ COUNT(medal) as GoldMedalCount 
+ FROM RESULTS 
+ WHERE medal='GOLD' AND event_id in 
+	(SELECT EVENTS.event_id 
+	 FROM EVENTS WHERE EVENTS.olympic_id in
+	 	(SELECT olympic_id 
+		 FROM OLYMPICS 
+		 WHERE year = 2004)
+	) GROUP BY player_id
+) AS GOLDMINERS 
+ON PLAYERS.player_id = GOLDMINERS.player_id 
+GROUP BY PlayerBirthYear;
+
 **************** RESULT ***************************************************************
-<INSERT YOUR RESULT HERE>
+ playerbirthyear | playercount | goldcount 
+-----------------+-------------+-----------
+            1982 |          19 |         2
+            1975 |          32 |        11
+            1977 |          26 |         4
+            1981 |          22 |         2
+            1974 |          31 |         9
+            1978 |          40 |        15
+            1976 |          24 |        17
+            1980 |          29 |        12
+            1971 |          45 |         9
+            1983 |          23 |         2
+            1984 |          30 |         7
+            1985 |          36 |        11
+            1979 |          36 |         7
+            1973 |          31 |         5
+            1972 |          29 |         3
+(15 rows)
+
+
 =============================================================================================
 
-=== 4
-<INSERT YOUR QUERY HERE>
+8) ==========================================================================================
+with IndividualEvents as (
+	(SELECT event_id
+	FROM EVENTS
+	WHERE is_team_event = 0)
+)
+SELECT event_id, COUNT(*) as MedalCount
+FROM RESULTS
+WHERE event_id in (select * FROM IndividualEvents) AND medal = 'GOLD' GROUP BY event_id HAVING COUNT(event_id) > 1;
+
 **************** RESULT ***************************************************************
-<INSERT YOUR RESULT HERE>
+ event_id | medalcount 
+----------+------------
+ E108     |          2
+(1 row)
 =============================================================================================
 
-=== 5
-<INSERT YOUR QUERY HERE>
+9) ==========================================================================================
+WITH 
+ButterflyEvent AS 
+(   SELECT DISTINCT event_id 
+    FROM EVENTS 
+    WHERE name like '%Butterfly%' 
+    AND olympic_id in 
+        (SELECT olympic_id FROM Olympics WHERE city = 'Athens')
+),
+GoldMedals AS 
+(   SELECT DISTINCT event_id, result 
+    FROM RESULTS 
+    WHERE medal = 'GOLD' 
+    AND event_id in 
+        (   SELECT event_id 
+            FROM ButterflyEvent
+        )
+),
+SilverMedals AS 
+(   SELECT DISTINCT event_id, result 
+    FROM RESULTS 
+    WHERE medal = 'SILVER' 
+    AND event_id in 
+    (   SELECT event_id 
+        FROM ButterflyEvent
+    )
+)
+SELECT GoldMedals.event_id, (SilverMedals.result - GoldMedals.result) AS difference 
+FROM GoldMedals 
+INNER JOIN SilverMedals ON 
+GoldMedals.event_id = SilverMedals.event_id;
 **************** RESULT ***************************************************************
-<INSERT YOUR RESULT HERE>
+ event_id |     difference     
+----------+--------------------
+ E45      |  0.310000000000002
+ E13      | 0.0399999999999991
+ E43      |  0.519999999999996
+ E15      |               0.32
+(4 rows)
+
 =============================================================================================
 
-=== 6
-<INSERT YOUR QUERY HERE>
-**************** RESULT ***************************************************************
-<INSERT YOUR RESULT HERE>
-=============================================================================================
+10) ==========================================================================================
+CREATE TABLE TeamEvents AS (
+	(SELECT event_id 
+	 FROM EVENTS 
+	 WHERE is_team_event = 1)
+);
 
-=== 7
-<INSERT YOUR QUERY HERE>
-**************** RESULT ***************************************************************
-<INSERT YOUR RESULT HERE>
-=============================================================================================
+CREATE TABLE TeamMedals AS (
+	SELECT DISTINCT PLAYERS.country_id, RESULTS.event_id, RESULTS.medal, RESULTS.result
+	FROM RESULTS 
+	INNER JOIN PLAYERS 
+		ON PLAYERS.player_id = RESULTS.player_id
+	WHERE event_id IN (SELECT * FROM TeamEvents)
+) ORDER BY country_id;
 
-=== 8
-<INSERT YOUR QUERY HERE>
 **************** RESULT ***************************************************************
-<INSERT YOUR RESULT HERE>
-=============================================================================================
+ country_id | event_id |  medal  | result 
+------------+----------+---------+--------
+ AUS        | E82      | GOLD    | 193.67
+ AUS        | E83      | GOLD    | 215.94
+ AUS        | E86      | SILVER  | 215.27
+ AUS        | E87      | GOLD    | 237.32
+ AUS        | E88      | SILVER  | 241.59
+ AUS        | E93      | SILVER  | 427.46
+ AUS        | E94      | GOLD    | 427.05
+ AUS        | E96      | SILVER  | 478.52
+ AUS        | E97      | SILVER  |  180.6
+ BAH        | E92      | GOLD    |  41.95
+ BRA        | E82      | BRONZE  |  197.4
+ BRA        | E90      | SILVER  |   37.9
+ CHN        | E95      | SILVER  | 475.97
+ CUB        | E90      | BRONZE  |  38.04
+ FRA        | E91      | BRONZE  |  42.54
+ GBR        | E89      | GOLD    |  38.07
+ GER        | E85      | SILVER  | 213.62
+ GER        | E86      | BRONZE  | 215.88
+ GER        | E87      | BRONZE  | 240.72
+ GER        | E95      | BRONZE  | 477.35
+ GER        | E96      | BRONZE  | 478.64
+ ITA        | E93      | BRONZE  | 431.83
+ JAM        | E100     | SILVER  | 203.25
+ JAM        | E91      | GOLD    |  41.73
+ JAM        | E92      | SILVER  |  42.13
+ JAM        | E98      | BRONZE  | 178.78
+ JAM        | E99      | BRONZE  |    202
+ JPN        | E85      | BRONZE  | 215.22
+ JPN        | E88      | BRONZE  | 244.16
+ NED        | E81      | SILVER  | 194.36
+ NED        | E83      | BRONZE  | 217.59
+ NED        | E84      | SILVER  | 219.83
+ NED        | E94      | BRONZE  |  432.7
+ NGR        | E89      | BRONZE  |  38.23
+ NGR        | E97      | BRONZE  |  180.9
+ NGR        | E98      | SILVER  | 178.68
+ RSA        | E81      | GOLD    | 193.17
+ RUS        | E100     | BRONZE  | 203.46
+ RUS        | E91      | SILVER  |  42.27
+ RUS        | E99      | SILVER  | 200.16
+ SWE        | E84      | BRONZE  |  220.3
+ USA        | E100     | GOLD    | 202.62
+ USA        | E81      | BRONZE  | 194.62
+ USA        | E82      | SILVER  | 193.86
+ USA        | E83      | SILVER  | 216.39
+ USA        | E84      | GOLD    | 216.61
+ USA        | E85      | GOLD    | 210.68
+ USA        | E86      | GOLD    | 213.73
+ USA        | E87      | SILVER  | 239.12
+ USA        | E88      | GOLD    |  238.3
+ USA        | E89      | SILVER  |  38.08
+ USA        | E90      | GOLD    |  37.61
+ USA        | E92      | BRONZE  |   42.2
+ USA        | E93      | GOLD    | 427.33
+ USA        | E94      | SILVER  | 432.64
+ USA        | E95      | GOLD    | 473.42
+ USA        | E96      | GOLD    |  477.8
+ USA        | E97      | GOLD    | 175.91
+ USA        | E98      | GOLD    | 176.35
+ USA        | E99      | GOLD    | 199.01
+(60 rows)
 
-=== 9
-<INSERT YOUR QUERY HERE>
-**************** RESULT ***************************************************************
-<INSERT YOUR RESULT HERE>
-=============================================================================================
+==============================================================================================
 
-=== 10
-<INSERT YOUR QUERY HERE>
-**************** RESULT ***************************************************************
-<INSERT YOUR RESULT HERE>
-=============================================================================================
 
-=== 11
-<INSERT YOUR QUERY HERE>
-**************** RESULT ***************************************************************
-<INSERT YOUR RESULT HERE>
-=============================================================================================
+11) ==========================================================================================
+ORIGINAL QUERY:
+
+select c.name, 0 + count(p.name)
+from countries c left outer join players p on c.country_id = p.country_id
+where extract(year from p.birthdate) = 1975
+group by c.name;
+
+This query does not work as desired because the where clause causes all countries which 
+do not have players born in 1975 to be removed from the returned set of tuples. The countries 
+without these players must be ommitted from the left outer join rather, which can be 
+accomplished as follows:
+
+SELECT COUNTRIES.name, 0 + count(player.name)
+FROM COUNTRIES 
+LEFT OUTER JOIN (
+	SELECT country_id, name 
+	FROM PLAYERS WHERE EXTRACT(YEAR FROM BIRTHDATE) = 1975
+) player ON COUNTRIES.country_id = player.country_id
+GROUP BY COUNTRIES.name;
+
+
+**************** RESULT **********************************************************************
+                   name                   | ?column? 
+------------------------------------------+----------
+ Costa Rica                               |        0
+ Eritrea                                  |        1
+ Estonia                                  |        1
+ Latvia                                   |        0
+ Turkey                                   |        0
+ Germany                                  |        1
+ France                                   |        0
+ Algeria                                  |        0
+ Slovenia                                 |        0
+ Japan                                    |        3
+ Jamaica                                  |        1
+ Spain                                    |        0
+ Ukraine                                  |        0
+ Belarus                                  |        1
+ Cameroon                                 |        0
+ Zimbabwe                                 |        0
+ Ireland                                  |        0
+ Saudi Arabia                             |        0
+ Denmark                                  |        1
+ Russia                                   |        0
+ Iceland                                  |        0
+ Lithuania                                |        1
+ Netherlands                              |        0
+ Portugal                                 |        0
+ Barbados                                 |        0
+ Nigeria                                  |        0
+ Romania                                  |        1
+ The Bahamas                              |        0
+ Dominican Republic                       |        0
+ Trinidad and Tobago                      |        0
+ Canada                                   |        0
+ Austria                                  |        0
+ China                                    |        0
+ Australia                                |        3
+ Kenya                                    |        0
+ South Africa                             |        4
+ United States                            |        5
+ Poland                                   |        0
+ Argentina                                |        0
+ Slovakia                                 |        0
+ United Kingdom                           |        1
+ Kazakhstan                               |        1
+ Croatia                                  |        0
+ Czech Republic                           |        1
+ Cuba                                     |        1
+ Italy                                    |        1
+ Sweden                                   |        2
+ Ethiopia                                 |        1
+ Greece                                   |        0
+ Brazil                                   |        1
+ Morocco                                  |        0
+ Hungary                                  |        0
+ Mozambique                               |        0
+ Finland                                  |        0
+ Mexico                                   |        0
+ Sri Lanka                                |        0
+ Bulgaria                                 |        0
+ Norway                                   |        0
+(58 rows)
+==============================================================================================
